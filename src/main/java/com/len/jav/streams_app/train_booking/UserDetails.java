@@ -4,8 +4,9 @@ public class UserDetails {
 
     private String name;
     private int age;
-    private String startingPoint;
-    private String endingPoint ;
+    private char startingPoint;
+    private char endingPoint ;
+    private boolean splitedSeat;
 
     public int getSeatNo() {
         return seatNo;
@@ -30,7 +31,7 @@ public class UserDetails {
 
     public UserDetails() {}
 
-    public UserDetails(String name, int age, String startingPoint, String endingPoint) {
+    public UserDetails(String name, int age, char startingPoint, char endingPoint) {
         this.name = name;
         this.age = age;
         this.startingPoint = startingPoint;
@@ -40,6 +41,22 @@ public class UserDetails {
     public UserDetails(String status, String pnrNumber) {
         this.status = status;
         this.pnrNumber = pnrNumber;
+    }
+
+    public char getEndingPoint() {
+        return endingPoint;
+    }
+
+    public void setEndingPoint(char endingPoint) {
+        this.endingPoint = endingPoint;
+    }
+
+    public char getStartingPoint() {
+        return startingPoint;
+    }
+
+    public void setStartingPoint(char startingPoint) {
+        this.startingPoint = startingPoint;
     }
 
     public String getName() {
@@ -54,19 +71,7 @@ public class UserDetails {
     public void setAge(int age) {
         this.age = age;
     }
-    public String getStartingPoint() {
-        return startingPoint;
-    }
-    public void setStartingPoint(String startingPoint) {
-        this.startingPoint = startingPoint;
-    }
-    public String getEndingPoint() {
-        return endingPoint;
-    }
 
-    public void setEndingPoint(String endingPoint) {
-        this.endingPoint = endingPoint;
-    }
 
     public String getStatus() {
         return status;
@@ -82,5 +87,13 @@ public class UserDetails {
 
     public void setPnrNumber(String pnrNumber) {
         this.pnrNumber = pnrNumber;
+    }
+
+    public boolean isSplitedSeat() {
+        return splitedSeat;
+    }
+
+    public void setSplitedSeat(boolean splitedSeat) {
+        this.splitedSeat = splitedSeat;
     }
 }
