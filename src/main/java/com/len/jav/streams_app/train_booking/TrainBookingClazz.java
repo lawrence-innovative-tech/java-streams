@@ -12,27 +12,6 @@ public class TrainBookingClazz {
     private List<UserDetails> waitingList = new LinkedList<UserDetails>();
     private int seatBooked = bookedList.size();
 
-    public List<UserDetails> trainBooking(List<UserDetails> users){
-        if (bookedList.size() < Consonats.TRAIN_SEATS ){
-            int availableSeats = (Consonats.TRAIN_SEATS - 1)  - bookedList.size();
-            if (availableSeats < users.size()){
-                adjustedBooking( users, availableSeats);
-            }
-            markedAsBooked(users);
-            bookedList.addAll(users);
-        } else {
-            markedAsWaitingList(users);
-            waitingList.addAll(users);
-        }
-        return users;
-    }
-
-    private void markedAsBooked(List<UserDetails> users) { // , int seatNumber
-        users.forEach(userDetails -> {
-            userDetails.setStatus("booked");
-            userDetails.setPnrNumber(generatPnr());
-        });
-    }
 
     private void markedAsWaitingList(List<UserDetails> users) {
         AtomicInteger waitingListNumber = new AtomicInteger(1 + waitingList.size());
@@ -48,20 +27,11 @@ public class TrainBookingClazz {
         return String.valueOf(rand.nextInt(500));
     }
 
-    private void adjustedBooking(List<UserDetails> users, int availableSeats) {
-
-//        users.stream().
-
-    }
-
-
     public List<UserDetails> book(List<UserDetails> user) {
 
         int seatsAvailable = Consonats.TRAIN_SEATS - bookedList.size();
-        AtomicInteger seatNumber = new AtomicInteger(bookedList.size() + 1);
-        AtomicInteger wlNumber = new AtomicInteger(waitingList.size() + 1);
         if (seatsAvailable >= user.size()){
-
+            AtomicInteger seatNumber = new AtomicInteger(bookedList.size() + 1);
             user = user.stream().map(userDetails ->
                     this.markedAsBooking(userDetails, seatNumber.getAndIncrement())).collect(Collectors.toList());
             bookedList.addAll(user);
@@ -76,26 +46,27 @@ public class TrainBookingClazz {
                         .mapToObj(finalUser::get).toList();
                 user = book(confirmBookList);
 
-                List<UserDetails> waitingLists = new ArrayList<>(IntStream.range(seatsAvailable , finalUser.size()).
-                        mapToObj(i -> {
-                            return markedAsWaiting(finalUser.get(i), wlNumber.getAndIncrement());
-                        }).toList());
-                waitingList.addAll(waitingLists);
-                user.addAll(waitingList);
+                List<UserDetails> waitingLists = IntStream.range(seatsAvailable , finalUser.size()).
+                        mapToObj(finalUser::get).toList();
+                waitingLists = markedAsWaitingOrBooking(waitingLists);
+                user.addAll(waitingLists);
                 return user;
 //            }
         } else {
-            return user.stream().map(userDetails -> this.markedAsWaiting(userDetails, wlNumber.getAndIncrement())).collect(Collectors.toList());
+//            return user.stream().map(userDetails -> this.markedAsWaiting(userDetails, wlNumber.getAndIncrement())).collect(Collectors.toList());
+            return markedAsWaitingOrBooking(user);
         }
     }
 
     public void getBookedList() {
-        bookedList.stream().forEach( userDetails -> {
-            System.out.println("Name : "+userDetails.getName() );
-            System.out.println("age : "+userDetails.getAge() );
-            System.out.println("pnr : "+userDetails.getPnrNumber() );
-            System.out.println("seatNumber : "+userDetails.getSeatNo() );
-        });
+        bookedList.stream().forEach(this::printPassenger);
+    }
+
+    private void printPassenger(UserDetails userDetails){
+        System.out.println("Name : "+userDetails.getName() );
+        System.out.println("age : "+userDetails.getAge() );
+        System.out.println("pnr : "+userDetails.getPnrNumber() );
+        System.out.println("seatNumber : "+userDetails.getSeatNo() );
     }
 
     public void getWaitingList() {
@@ -115,6 +86,29 @@ public class TrainBookingClazz {
         }
     }
 
+    public void cancelTickets(){
+        System.out.print("Enter PNR Number :");
+        String pnr = MainClazz.getInput().next();
+        Optional<UserDetails> userDetails = bookedList.stream()
+                .filter(passengers -> passengers.getPnrNumber().equals(pnr))
+                .findFirst();
+        UserDetails passenger = new UserDetails();
+        if (userDetails.isEmpty()){
+            userDetails = waitingList.stream()
+                    .filter(passengers -> passengers.getPnrNumber().equals(pnr))
+                    .findFirst();
+            if (userDetails.isPresent()){
+                passenger = chechAvailability(userDetails.get(), true, true);
+            }
+        }else
+            passenger = chechAvailability(userDetails.get(), true, false);
+        System.out.printf(pnr +" successfully cancelled");
+        if (Objects.nonNull(passenger)){
+            System.out.printf("Add waiting list passenger");
+            printPassenger(passenger);
+        }
+    }
+
     private UserDetails markedAsBooking(UserDetails users, int seatNumber) {
         users.setStatus("booked");
         users.setPnrNumber(generatPnr());
@@ -122,27 +116,110 @@ public class TrainBookingClazz {
         return users;
     }
 
-    private UserDetails markedAsWaiting(UserDetails user, int waitingListNumber, boolean cancelTickets) {
+    private List<UserDetails> markedAsWaitingOrBooking(List<UserDetails> users){
+        List<UserDetails> addBookingList = new ArrayList<>();
+        List<UserDetails> addWaitingList = new ArrayList<>();
+        int waitingListCount = waitingList.size();
+        for (UserDetails userDetails: users){
+            UserDetails passengers = chechAvailability(userDetails, false, false);
+            if (Objects.nonNull(passengers)) {
+                passengers.setStatus("booked");
+                addBookingList.add(passengers);
+            }
+            else {
+                userDetails.setWaitingList(++waitingListCount);
+                addWaitingList.add(userDetails);
+            }
+        }
+//        split and store the bookings
+        addBookingList.addAll(addWaitingList);
+        return addBookingList;
+    }
+
+    private UserDetails chechAvailability(UserDetails user, boolean cancelTickets, boolean wlPassenger) {
 
         int passengerBoardingPoint = user.getStartingPoint();
         int passengerDestination = user.getEndingPoint();
-        Optional<UserDetails> cancelPassenger = bookedList.stream().filter(userDetails -> {
-            if (cancelTickets) {
-                return this.preCheckAvailability(userDetails.getStartingPoint(), userDetails.getEndingPoint(),
-                        passengerBoardingPoint, passengerDestination, userDetails.isSplitedSeat());
-            }else
-                return postCheckAvailability(userDetails.getStartingPoint(), userDetails.getEndingPoint(),
-                        passengerBoardingPoint, passengerDestination, userDetails.isSplitedSeat());
-        }).findFirst();
-        if (cancelPassenger.isPresent()){
-            cancelPassenger.filter(seatExists -> bookedList.);
+        if (cancelTickets){
+            if (wlPassenger)
+                removePassenger(user, wlPassenger);
+            else {
+                boolean splitSeat = user.isSplitedSeat();
+                Optional<UserDetails> alternetWaitingPassenger =
+                        cancelTicket(passengerBoardingPoint,passengerDestination, splitSeat);
+                if (alternetWaitingPassenger.isPresent()){
+                    UserDetails alternetPassenger = alternetWaitingPassenger.get();
+                    alternetPassenger.setSeatNo(user.getSeatNo());
+                    alternetPassenger.setPnrNumber(generatPnr());
+                    alternetPassenger.setSplitedSeat(splitSeat);
+                    removePassenger(user, wlPassenger);
+                    return alternetPassenger;
+                }
+            }
+        } else {
+            Optional<UserDetails> assignedPassenger =
+                    waitingList(passengerBoardingPoint,passengerDestination, false);
+            if (assignedPassenger.isPresent()){
+                assignedPassenger.get().setSplitedSeat(true);
+                user.setPnrNumber(generatPnr());
+                user.setSplitedSeat(true);
+                user.setSeatNo(assignedPassenger.get().getSeatNo());
+                return user;
+            }
         }
-        user.setStatus("waiting");
-        user.setWaitingList(waitingListNumber);
-        return user;
+//        Optional<UserDetails> cancelPassenger = bookedList.stream().filter(userDetails -> {
+//            if (cancelTickets) {
+//
+//                return this.preCheckAvailability(userDetails.getStartingPoint(), userDetails.getEndingPoint(),
+//                        passengerBoardingPoint, passengerDestination, userDetails.isSplitedSeat());
+//            }else {
+//                cancelPassengerSeatNo = userDetails.getSeatNo();
+//                return postCheckAvailability(userDetails.getStartingPoint(), userDetails.getEndingPoint(),
+//                        passengerBoardingPoint, passengerDestination, userDetails.isSplitedSeat());
+//            }
+//        }).findFirst();
+//        if (cancelPassenger.isPresent()){
+//             = cancelPassenger.get().getSeatNo();
+//            List<UserDetails> passengersList = bookedList.stream()
+//                    .filter(passenger -> passenger.getSeatNo() == cancelPassengerSeatNo)
+//                    .collect(Collectors.toList());
+//
+
+//             = cancelPassenger.stream().map(seatExists -> bookedList
+//                            .stream().
+//                            filter(passengerList ->
+//                    passengerList.getSeatNo() == seatExists.getSeatNo()).collect(Collectors.toList()))
+//                    .collect(Collectors.toList());
+
+//        }
+//        user.setStatus("waiting");
+//        user.setWaitingList(waitingListNumber);
+        return null;
     }
 
-    private
+    private Optional<UserDetails> cancelTicket(int passengerBoardingPoint,
+                                               int passengerDestination, boolean splitedSeat){
+        return waitingList.stream().filter(userDetails -> {
+            return this.preCheckAvailability(userDetails.getStartingPoint(), userDetails.getEndingPoint(),
+                    passengerBoardingPoint, passengerDestination, splitedSeat);
+        }).findFirst();
+    }
+
+    private Optional<UserDetails> waitingList(int passengerBoardingPoint,
+                                               int passengerDestination, boolean splitedSeat){
+        return bookedList.stream().filter(userDetails -> {
+            return this.postCheckAvailability(userDetails.getStartingPoint(), userDetails.getEndingPoint(),
+                    passengerBoardingPoint, passengerDestination, splitedSeat);
+        }).findFirst();
+    }
+    private boolean removePassenger(UserDetails userDetails, boolean wlPassenger){
+        if (Objects.nonNull(userDetails.getPnrNumber())){
+            return bookedList.remove(userDetails);
+        }
+        return waitingList.remove(userDetails);
+    }
+
+
     private boolean postCheckAvailability(int boardingPoint, int destination,
                                           int passengerBoardingPoint, int passengerDestination, boolean splitedSeat) {
 
@@ -154,11 +231,9 @@ public class TrainBookingClazz {
 
     private boolean preCheckAvailability(int boardingPoint, int destination,
                                          int passengerBoardingPoint, int passengerDestination, boolean splitedSeat) {
-
-        if (splitedSeat) {
+        if (splitedSeat)
             return boardingPoint <= passengerBoardingPoint && destination >= passengerDestination;
-        } else
-            return true;
+        return true;
     }
 
 }

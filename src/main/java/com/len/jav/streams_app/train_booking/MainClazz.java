@@ -39,7 +39,7 @@ public class MainClazz {
                     printLine();
                     break;
                 case 4:
-                    trainBookingClazz.getWaitingList();
+                    trainBookingClazz.cancelTickets();
                     printLine();
                     break;
                 default:
