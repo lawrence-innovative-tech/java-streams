@@ -12,16 +12,6 @@ public class TrainBookingClazz {
     private List<UserDetails> waitingList = new LinkedList<UserDetails>();
     private int seatBooked = bookedList.size();
 
-
-    private void markedAsWaitingList(List<UserDetails> users) {
-        AtomicInteger waitingListNumber = new AtomicInteger(1 + waitingList.size());
-        users.forEach(userDetails -> {
-            userDetails.setStatus("waiting");
-            userDetails.setWaitingList(waitingListNumber.get());
-            waitingListNumber.getAndIncrement();
-        });
-    }
-
     private String generatPnr(){
         Random rand = new Random();
         return String.valueOf(rand.nextInt(500));
@@ -36,11 +26,7 @@ public class TrainBookingClazz {
                     this.markedAsBooking(userDetails, seatNumber.getAndIncrement())).collect(Collectors.toList());
             bookedList.addAll(user);
             return user;
-        } else if (seatsAvailable != 0){
-//            System.out.println("Only "+seatsAvailable+" seats available \n Please enter to confirm :- ");
-//            System.out.println("1. book 2. cancel ");
-//            int confirmation = MainClazz.getInput().nextInt();
-//            if (confirmation == 1){
+        } else if (seatsAvailable >= 0){
                 List<UserDetails> finalUser = user;
                 List<UserDetails> confirmBookList = IntStream.range(0, seatsAvailable )
                         .mapToObj(finalUser::get).toList();
@@ -51,9 +37,7 @@ public class TrainBookingClazz {
                 waitingLists = markedAsWaitingOrBooking(waitingLists);
                 user.addAll(waitingLists);
                 return user;
-//            }
         } else {
-//            return user.stream().map(userDetails -> this.markedAsWaiting(userDetails, wlNumber.getAndIncrement())).collect(Collectors.toList());
             return markedAsWaitingOrBooking(user);
         }
     }
@@ -65,25 +49,21 @@ public class TrainBookingClazz {
     private void printPassenger(UserDetails userDetails){
         System.out.println("Name : "+userDetails.getName() );
         System.out.println("age : "+userDetails.getAge() );
+        System.out.println("Boarding point : "+userDetails.getStartingPoint() );
+        System.out.println("Destination : "+userDetails.getEndingPoint() );
         System.out.println("pnr : "+userDetails.getPnrNumber() );
         System.out.println("seatNumber : "+userDetails.getSeatNo() );
     }
 
     public void getWaitingList() {
-        waitingList.stream().forEach( userDetails -> {
+        AtomicInteger list = new AtomicInteger();
+        waitingList.forEach(userDetails -> {
             System.out.println("Name : "+userDetails.getName() );
             System.out.println("age : "+userDetails.getAge() );
-            System.out.println("waitingList : "+userDetails.getWaitingList());
+            System.out.println("Boarding point : "+userDetails.getStartingPoint() );
+            System.out.println("Destination : "+userDetails.getEndingPoint() );
+            System.out.println("waitingList : "+(list.incrementAndGet()));
         });
-    }
-
-    public void cancelTicket(String pnr){
-        Optional<UserDetails> cancelPassenger = bookedList.stream().filter(userDetails -> userDetails.getPnrNumber().equals(pnr)).findFirst();
-        if (cancelPassenger.isPresent()){
-
-        } else {
-            cancelPassenger = waitingList.stream().filter(userDetails -> userDetails.getPnrNumber().equals(pnr)).findFirst();
-        }
     }
 
     public void cancelTickets(){
@@ -106,6 +86,8 @@ public class TrainBookingClazz {
         if (Objects.nonNull(passenger)){
             System.out.printf("Add waiting list passenger");
             printPassenger(passenger);
+            bookedList.add(passenger);
+            waitingList.remove(passenger);
         }
     }
 
@@ -125,13 +107,14 @@ public class TrainBookingClazz {
             if (Objects.nonNull(passengers)) {
                 passengers.setStatus("booked");
                 addBookingList.add(passengers);
+                bookedList.add(passengers);
             }
             else {
                 userDetails.setWaitingList(++waitingListCount);
                 addWaitingList.add(userDetails);
+                waitingList.add(userDetails);
             }
         }
-//        split and store the bookings
         addBookingList.addAll(addWaitingList);
         return addBookingList;
     }
@@ -158,7 +141,7 @@ public class TrainBookingClazz {
             }
         } else {
             Optional<UserDetails> assignedPassenger =
-                    waitingList(passengerBoardingPoint,passengerDestination, false);
+                    waitingList(passengerBoardingPoint,passengerDestination);
             if (assignedPassenger.isPresent()){
                 assignedPassenger.get().setSplitedSeat(true);
                 user.setPnrNumber(generatPnr());
@@ -167,33 +150,6 @@ public class TrainBookingClazz {
                 return user;
             }
         }
-//        Optional<UserDetails> cancelPassenger = bookedList.stream().filter(userDetails -> {
-//            if (cancelTickets) {
-//
-//                return this.preCheckAvailability(userDetails.getStartingPoint(), userDetails.getEndingPoint(),
-//                        passengerBoardingPoint, passengerDestination, userDetails.isSplitedSeat());
-//            }else {
-//                cancelPassengerSeatNo = userDetails.getSeatNo();
-//                return postCheckAvailability(userDetails.getStartingPoint(), userDetails.getEndingPoint(),
-//                        passengerBoardingPoint, passengerDestination, userDetails.isSplitedSeat());
-//            }
-//        }).findFirst();
-//        if (cancelPassenger.isPresent()){
-//             = cancelPassenger.get().getSeatNo();
-//            List<UserDetails> passengersList = bookedList.stream()
-//                    .filter(passenger -> passenger.getSeatNo() == cancelPassengerSeatNo)
-//                    .collect(Collectors.toList());
-//
-
-//             = cancelPassenger.stream().map(seatExists -> bookedList
-//                            .stream().
-//                            filter(passengerList ->
-//                    passengerList.getSeatNo() == seatExists.getSeatNo()).collect(Collectors.toList()))
-//                    .collect(Collectors.toList());
-
-//        }
-//        user.setStatus("waiting");
-//        user.setWaitingList(waitingListNumber);
         return null;
     }
 
@@ -206,10 +162,10 @@ public class TrainBookingClazz {
     }
 
     private Optional<UserDetails> waitingList(int passengerBoardingPoint,
-                                               int passengerDestination, boolean splitedSeat){
+                                               int passengerDestination){
         return bookedList.stream().filter(userDetails -> {
             return this.postCheckAvailability(userDetails.getStartingPoint(), userDetails.getEndingPoint(),
-                    passengerBoardingPoint, passengerDestination, splitedSeat);
+                    passengerBoardingPoint, passengerDestination, userDetails.getSeatNo());
         }).findFirst();
     }
     private boolean removePassenger(UserDetails userDetails, boolean wlPassenger){
@@ -220,13 +176,18 @@ public class TrainBookingClazz {
     }
 
 
-    private boolean postCheckAvailability(int boardingPoint, int destination,
-                                          int passengerBoardingPoint, int passengerDestination, boolean splitedSeat) {
-
-        if (!splitedSeat) {
-            return (destination <= passengerBoardingPoint || passengerDestination <= boardingPoint);
-        }
-        return false;
+    private boolean postCheckAvailability(int boardingPoint, int destination, int passengerBoardingPoint,
+                                          int passengerDestination, int seatnumber) {
+            for (UserDetails user: bookedList){
+                if (user.getSeatNo() == seatnumber){
+                    if (boardingPoint > user.getStartingPoint())
+                        boardingPoint = user.getStartingPoint();
+                    else if (destination < user.getEndingPoint()) {
+                        destination = user.getEndingPoint();
+                    }
+                }
+            }
+        return (destination <= passengerBoardingPoint || passengerDestination <= boardingPoint);
     }
 
     private boolean preCheckAvailability(int boardingPoint, int destination,

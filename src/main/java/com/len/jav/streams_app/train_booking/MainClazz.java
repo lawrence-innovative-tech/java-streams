@@ -16,7 +16,7 @@ public class MainClazz {
         while (true) {
             System.out.println("Welcome to the TrainBooking System");
             System.out.println("Please enter which is u want to be perform");
-            System.out.println("1. Book Ticket \n2. Confirm List \n3. Waiting List \n4. Book Ticket \n5. exit");
+            System.out.println("1. Book Ticket \n2. Confirm List \n3. Waiting List \n4. Cancel Ticket \n5. exit");
             System.out.print("Enter your choice -> " );
             int choice = MainClazz.sc.nextInt();
 
@@ -65,21 +65,22 @@ public class MainClazz {
             UserDetails user = new UserDetails();
             System.out.print("Please enter your name : ");
             user.setName(sc.next());
-            System.out.print("Please enter your age : ");
-            user.setAge(sc.nextInt());
+//            System.out.print("Please enter your age : ");
+//            user.setAge(sc.nextInt());
             System.out.print("Please enter starting point : ");
 
-            int boardingPoint = sc.next().charAt(0);
-            if (!(boardingPoint <= 65 || boardingPoint >= 70)) {
-                throw new RuntimeException("Invalid boarding point " + (char) boardingPoint);
+            String boardingPoint = sc.next();
+            int boardingPointInt = boardingPoint.charAt(0);
+            if (!(boardingPointInt >= 65 && boardingPointInt <= 70)) {
+                throw new RuntimeException("Invalid boarding point " + (char) boardingPointInt);
             }
-            user.setStartingPoint((char) boardingPoint);
-            int destination = sc.next().charAt(0);
+            user.setStartingPoint((char) boardingPointInt);
             System.out.print("Please enter ending point : ");
-            if (!(destination <= 66 || destination >= 70)) {
+            int destination = sc.next().charAt(0);
+            if (!(destination <= 70 && destination >= 66)) {
                 throw new RuntimeException("Invalid destination point " + (char)  destination);
             }
-            user.setStartingPoint((char) destination);
+            user.setEndingPoint((char) destination);
             users.add(user);
         }
         return users;

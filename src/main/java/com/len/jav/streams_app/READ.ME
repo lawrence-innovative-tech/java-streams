@@ -1,0 +1,14 @@
+Problem :
+
+5.TICKET RESERVATION SYSTEM
+1.	first simple reservation for 50 seats from A to F.
+2.	After stations are added in middle like B, C, D, E. Where people can board any station and get down at any station assuming train is going from A to F.
+3.	Then Waiting list are to be added after 50 seats reserved and if any reserved seat is cancelled we have to check the waiting list and need to confirm the seat if possible.
+4.	After which we need to print the details of the PNR details.
+
+Notes :
+
+1. Need to update postCheckAvailability() and preCheckAvailability().
+2. When cancel the ticket, based on split seat preCheckAvailability() work but if multiple passenger booked a single seat
+    the cancel person not updated the split sear property it will create cause of the booking. In future, it will update.
+3. postCheckAvailability() condition also will update future.
